@@ -206,7 +206,18 @@
         mainBtn.disabled = true;
         mainBtn.textContent = '完成';
         statusEl.textContent = '三次都已完成';
-        finalEl.textContent = `最終結果：${results.join('、')}｜合計：${results.reduce((a, b) => a + b, 0)}`;
+        let finalNumber;
+        const first = results[0];
+        const second = results[1];
+        const third = results[2];
+
+        if (first < 10) {
+          finalNumber = `${first}${second}${third}`;
+        } else {
+          finalNumber = `${first}${second}${third}`;
+        }
+
+        finalEl.textContent = `最終結果：${finalNumber}`;;
       } else {
         mainBtn.textContent = '開始';
         statusEl.textContent = `已完成第 ${round} 次，按下「開始」進行第 ${round + 1} 次`;
