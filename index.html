@@ -1,0 +1,241 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>三次拉霸數字機</title>
+  <style>
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      min-height: 100vh;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      background: linear-gradient(180deg, #111827 0%, #0f172a 100%);
+      color: #fff;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      padding: 20px;
+    }
+    .app {
+      width: 100%;
+      max-width: 420px;
+      background: rgba(17, 24, 39, 0.95);
+      border: 1px solid rgba(255,255,255,0.08);
+      border-radius: 24px;
+      padding: 24px;
+      box-shadow: 0 20px 50px rgba(0,0,0,0.35);
+    }
+    h1 {
+      margin: 0 0 8px;
+      text-align: center;
+      font-size: 28px;
+    }
+    .subtitle {
+      text-align: center;
+      color: #cbd5e1;
+      font-size: 14px;
+      margin-bottom: 18px;
+      line-height: 1.6;
+    }
+    .display {
+      height: 130px;
+      border-radius: 20px;
+      background: #020617;
+      border: 2px solid #22c55e;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 72px;
+      font-weight: 800;
+      color: #4ade80;
+      letter-spacing: 2px;
+      margin-bottom: 16px;
+      box-shadow: inset 0 0 24px rgba(34, 197, 94, 0.12);
+    }
+    .status {
+      text-align: center;
+      font-size: 15px;
+      color: #e2e8f0;
+      margin-bottom: 16px;
+      min-height: 22px;
+    }
+    .controls {
+      display: flex;
+      gap: 12px;
+      margin-bottom: 18px;
+    }
+    button {
+      appearance: none;
+      border: none;
+      border-radius: 16px;
+      padding: 16px 18px;
+      font-size: 20px;
+      font-weight: 700;
+      cursor: pointer;
+      width: 100%;
+    }
+    .main-btn {
+      background: linear-gradient(135deg, #22c55e, #16a34a);
+      color: #052e16;
+    }
+    .reset-btn {
+      background: #1e293b;
+      color: #e2e8f0;
+      border: 1px solid rgba(255,255,255,0.08);
+    }
+    button:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+    .panel {
+      background: rgba(2, 6, 23, 0.78);
+      border-radius: 18px;
+      padding: 16px;
+      border: 1px solid rgba(255,255,255,0.06);
+    }
+    .panel-title {
+      margin: 0 0 10px;
+      color: #86efac;
+      font-size: 16px;
+      font-weight: 700;
+    }
+    .record {
+      display: flex;
+      justify-content: space-between;
+      padding: 10px 0;
+      border-bottom: 1px solid rgba(255,255,255,0.06);
+      font-size: 16px;
+    }
+    .record:last-child {
+      border-bottom: none;
+    }
+    .final {
+      margin-top: 14px;
+      padding-top: 14px;
+      border-top: 1px solid rgba(255,255,255,0.08);
+      color: #facc15;
+      font-weight: 700;
+      font-size: 16px;
+      line-height: 1.6;
+    }
+    .hint {
+      margin-top: 16px;
+      font-size: 13px;
+      color: #94a3b8;
+      line-height: 1.6;
+      text-align: center;
+    }
+    @media (max-width: 480px) {
+      .app { padding: 20px; }
+      .display { font-size: 64px; height: 120px; }
+      button { font-size: 18px; padding: 15px 16px; }
+    }
+  </style>
+</head>
+<body>
+  <div class="app">
+    <h1>三次拉霸數字機</h1>
+    <div class="subtitle">第 1 次範圍：5～16<br>第 2、3 次範圍：0～9</div>
+
+    <div class="display" id="display">0</div>
+    <div class="status" id="status">按下「開始」進行第 1 次</div>
+
+    <div class="controls">
+      <button class="main-btn" id="mainBtn">開始</button>
+      <button class="reset-btn" id="resetBtn">重設</button>
+    </div>
+
+    <div class="panel">
+      <div class="panel-title">結果紀錄</div>
+      <div class="record"><span>第 1 次</span><strong id="r1">-</strong></div>
+      <div class="record"><span>第 2 次</span><strong id="r2">-</strong></div>
+      <div class="record"><span>第 3 次</span><strong id="r3">-</strong></div>
+      <div class="final" id="final">尚未完成</div>
+    </div>
+
+    <div class="hint">操作方式：開始 → 停止，重複三次</div>
+  </div>
+
+  <script>
+    const display = document.getElementById('display');
+    const statusEl = document.getElementById('status');
+    const mainBtn = document.getElementById('mainBtn');
+    const resetBtn = document.getElementById('resetBtn');
+    const finalEl = document.getElementById('final');
+    const recordEls = [
+      document.getElementById('r1'),
+      document.getElementById('r2'),
+      document.getElementById('r3')
+    ];
+
+    let spinning = false;
+    let timer = null;
+    let round = 0;
+    let results = [];
+
+    function getRandomNumber(currentRound) {
+      if (currentRound === 0) {
+        return Math.floor(Math.random() * 12) + 5; // 5~16
+      }
+      return Math.floor(Math.random() * 10); // 0~9
+    }
+
+    function startSpin() {
+      if (round >= 3) return;
+      spinning = true;
+      mainBtn.textContent = '停止';
+      statusEl.textContent = `第 ${round + 1} 次進行中...`;
+
+      timer = setInterval(() => {
+        display.textContent = getRandomNumber(round);
+      }, 80);
+    }
+
+    function stopSpin() {
+      clearInterval(timer);
+      spinning = false;
+
+      const value = getRandomNumber(round);
+      display.textContent = value;
+      results.push(value);
+      recordEls[round].textContent = value;
+      round += 1;
+
+      if (round >= 3) {
+        mainBtn.disabled = true;
+        mainBtn.textContent = '完成';
+        statusEl.textContent = '三次都已完成';
+        finalEl.textContent = `最終結果：${results.join('、')}｜合計：${results.reduce((a, b) => a + b, 0)}`;
+      } else {
+        mainBtn.textContent = '開始';
+        statusEl.textContent = `已完成第 ${round} 次，按下「開始」進行第 ${round + 1} 次`;
+        finalEl.textContent = '尚未完成';
+      }
+    }
+
+    function resetGame() {
+      clearInterval(timer);
+      spinning = false;
+      round = 0;
+      results = [];
+      display.textContent = '0';
+      statusEl.textContent = '按下「開始」進行第 1 次';
+      mainBtn.disabled = false;
+      mainBtn.textContent = '開始';
+      finalEl.textContent = '尚未完成';
+      recordEls.forEach(el => el.textContent = '-');
+    }
+
+    mainBtn.addEventListener('click', () => {
+      if (spinning) {
+        stopSpin();
+      } else {
+        startSpin();
+      }
+    });
+
+    resetBtn.addEventListener('click', resetGame);
+  </script>
+</body>
+</html>
